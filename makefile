@@ -1,28 +1,37 @@
 .PHONY: compile run clean
 
-BUILDNAME = termslides
+BIN = bin
+TARGET = $(BIN)/termslides
 BUILD = build
 SRC = src
-INCLUDE = include
 
-_OBJS = main.o
-_HEADERS = 
+INCLUDES = -Iinclude -I$(SRC)/gui
+CFLAGS = $(INCLUDES) -lncurses -MMD -MP
 
-OBJS = $(patsubst %, $(BUILD)/%, $(_OBJS))
+DEPS := $(OBJECTS:.o=.d)
 
-HEADERS = $(patsubst %, $(INCLUDE)/%, $(_HEADERS))
+SOURCES := $(shell find $(SRC) -name '*.c')
+HEADERS := $(shell find $(SRC) -name '*.h')
+OBJECTS = $(patsubst $(SRC)/%.c, $(BUILD)/%.o, $(SOURCES))
 
 run: compile
-	./$(BUILD)/$(BUILDNAME)
+	./$(TARGET)
 
-compile: ./$(BUILD)/$(BUILDNAME)
+compile: $(TARGET)
+	@echo $(OBJECTS)
 
-./$(BUILD)/$(BUILDNAME): $(OBJS) $(HEADERS) 
-	gcc -o ./$(BUILD)/$(BUILDNAME) $(OBJS) $(HEADERS)
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BIN)
+	gcc $(CFLAGS) $(OBJECTS) -o $(TARGET) $(HEADERS)
 
-$(BUILD)/%.o: $(SRC)/%.c $(HEADERS)
-	gcc -c -o $@ $< $(CFLAGS)
+$(BUILD)/%.o: $(SRC)/%.c $(BUILD)
+	@mkdir -p $(@D)
+	gcc $(CFLAGS) -c -o $@ $< 
 
-$(BUILD)/%.o: $(INCLUDE)/%.c $(HEADERS)
-	gcc -c -o $@ $< $(CFLAGS)
+$(BUILD): 
+	@mkdir -p build
 
+clean: 
+	rm -rf $(BUILD) $(BIN)
+
+-include $(DEPS) 
